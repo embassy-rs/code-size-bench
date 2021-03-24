@@ -15,6 +15,6 @@ Results:
    text    data     bss     dec     hex filename
    1256       0      16    1272     4f8 out/async-block-on.elf
    1716       0     136    1852     73c out/async-embassy.elf
-  13056       0    9816   22872    5958 out/drogue-device.elf
+   9740       0    3056   12796    31fc out/drogue-device.elf
     540       0       4     544     220 out/hal-blocking.elf
 ```
