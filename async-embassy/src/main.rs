@@ -6,45 +6,30 @@
 
 use panic_halt as _;
 use cortex_m_rt::entry;
-use embassy::executor::{task, Executor};
-use embassy::time::{Duration, Timer};
-use embassy::traits::uart::Uart;
+use embassy::{executor::{task, Executor}, util::Steal};
+use embassy::traits::uart::{Read, Write};
 use embassy::util::Forever;
-use embassy_nrf::{interrupt, pac, rtc, uarte};
-use futures::future::{select, Either};
-use nrf52840_hal::clocks;
-use nrf52840_hal::gpio;
+use embassy_nrf::{Peripherals, gpio::NoPin, interrupt,  uarte};
+use futures::pin_mut;
 
 #[task]
-async fn run(uart: pac::UARTE0, port: pac::P0) {
-    // Init UART
-    let port0 = gpio::p0::Parts::new(port);
+async fn run() {
+    let p = unsafe { Peripherals::steal() };
 
-    let pins = uarte::Pins {
-        rxd: port0.p0_08.into_floating_input().degrade(),
-        txd: port0
-            .p0_06
-            .into_push_pull_output(gpio::Level::Low)
-            .degrade(),
-        cts: None,
-        rts: None,
-    };
+    let mut config = uarte::Config::default();
+    config.parity = uarte::Parity::EXCLUDED;
+    config.baudrate = uarte::Baudrate::BAUD115200;
 
-    // NOTE(unsafe): Safe becasue we do not use `mem::forget` anywhere.
-    let mut uart = unsafe {
-        uarte::Uarte::new(
-            uart,
-            interrupt::take!(UARTE0_UART0),
-            pins,
-            uarte::Parity::EXCLUDED,
-            uarte::Baudrate::BAUD115200,
-        )
-    };
+    let irq = interrupt::take!(UARTE0_UART0);
+    let uart =
+        unsafe { uarte::Uarte::new(p.uarte0, irq, p.p0_08, p.p0_06, NoPin, NoPin, config) };
+    pin_mut!(uart);
+
+    let mut buf = [0; 1];
 
     loop {
-        let mut buf = [0u8; 1];
-        uart.receive(&mut buf).await.unwrap();
-        uart.send(&buf).await.unwrap();
+        let _ = uart.as_mut().read(&mut buf).await;
+        let _ = uart.as_mut().write(&buf).await;
     }
 }
 
@@ -56,9 +41,7 @@ fn main() -> ! {
 
     let executor = EXECUTOR.put(Executor::new());
 
-    let uarte0 = p.UARTE0;
-    let p0 = p.P0;
     executor.run(|spawner| {
-        spawner.spawn(run(uarte0, p0)).unwrap();
+        spawner.spawn(run()).unwrap();
     });
 }

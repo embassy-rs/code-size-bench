@@ -1,0 +1,37 @@
+[package]
+authors = ["Ulf Lilleengen <ulf.lilleengen@gmail.com>"]
+edition = "2018"
+readme = "README.md"
+name = "echo"
+version = "0.1.0"
+
+[dependencies]
+cortex-m = { version = "0.6.4", features = ["inline-asm"] }
+cortex-m-rt = { version = "0.6.11", features = ["device"] }
+nb = "1.0.0"
+embedded-hal = { version = "0.2.3", features = ["unproven"] }
+void = { version = "1.0.2", default-features = false }
+drogue-device = { git="https://github.com/drogue-iot/drogue-device", features = ["chip+nrf52833", "fonts"]}
+heapless = "0.5.5"
+panic-halt = "0.2.0"
+log = { version = "0.4.14", features = ["release_max_level_off"] }
+
+[dependencies.nrf52833-hal]
+git = "https://github.com/lulf/nrf-hal.git"
+branch = "uarte-embedded-serial"
+features = ["rt"]
+
+[[bin]]
+name = "echo"
+test = false
+bench = false
+
+
+[profile.release]
+codegen-units = 1
+debug = 2
+debug-assertions = false
+incremental = false
+lto = 'fat'
+opt-level = 'z'
+overflow-checks = false

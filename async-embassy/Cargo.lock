@@ -161,7 +161,6 @@ dependencies = [
 [[package]]
 name = "embassy"
 version = "0.1.0"
-source = "git+https://github.com/akiles/embassy#f14361835fb81726d71ac85f0f562ede8c1a6472"
 dependencies = [
  "atomic-polyfill",
  "cortex-m 0.7.2",
@@ -174,7 +173,6 @@ dependencies = [
 [[package]]
 name = "embassy-extras"
 version = "0.1.0"
-source = "git+https://github.com/akiles/embassy#f14361835fb81726d71ac85f0f562ede8c1a6472"
 dependencies = [
  "cortex-m 0.7.2",
  "embassy",
@@ -183,7 +181,6 @@ dependencies = [
 [[package]]
 name = "embassy-macros"
 version = "0.1.0"
-source = "git+https://github.com/akiles/embassy#f14361835fb81726d71ac85f0f562ede8c1a6472"
 dependencies = [
  "darling",
  "quote",
@@ -193,7 +190,6 @@ dependencies = [
 [[package]]
 name = "embassy-nrf"
 version = "0.1.0"
-source = "git+https://github.com/akiles/embassy#f14361835fb81726d71ac85f0f562ede8c1a6472"
 dependencies = [
  "cortex-m 0.7.2",
  "cortex-m-rt",
@@ -209,7 +205,6 @@ dependencies = [
 [[package]]
 name = "embassy-traits"
 version = "0.1.0"
-source = "git+https://github.com/akiles/embassy#f14361835fb81726d71ac85f0f562ede8c1a6472"
 dependencies = [
  "embedded-hal",
 ]

@@ -20,10 +20,14 @@ nrf52840-hal = "0.12.1"
 futures = { version = "0.3.8", default-features = false, features = ["async-await"] }
 
 [patch.crates-io]
-embassy = { git = "https://github.com/akiles/embassy" }
-embassy-nrf = { git = "https://github.com/akiles/embassy" }
-embassy-macros = { git = "https://github.com/akiles/embassy" }
-embassy-traits = { git = "https://github.com/akiles/embassy" }
+#embassy = { git = "https://github.com/akiles/embassy" }
+#embassy-nrf = { git = "https://github.com/akiles/embassy" }
+#embassy-macros = { git = "https://github.com/akiles/embassy" }
+#embassy-traits = { git = "https://github.com/akiles/embassy" }
+embassy = { path = "../../embassy/embassy" }
+embassy-nrf = { path = "../../embassy/embassy-nrf" }
+embassy-macros = { path = "../../embassy/embassy-macros" }
+embassy-traits = { path = "../../embassy/embassy-traits" }
 
 [profile.dev]
 debug = 2
