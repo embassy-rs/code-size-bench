@@ -12,8 +12,9 @@ rustflags = [
 
   # Code-size optimizations.
   "-Z", "trap-unreachable=no",
+  "-C", "inline-threshold=5",
+  "-C", "no-vectorize-loops",
 ]
 
 [build]
 target = "thumbv7em-none-eabi"
-
