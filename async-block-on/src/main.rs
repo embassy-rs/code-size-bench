@@ -4,7 +4,8 @@
 use cortex_m_rt::entry;
 use embassy::traits::uart::{Read, Write};
 use embassy::util::Steal;
-use embassy_nrf::{gpio::NoPin, interrupt, uarte, Peripherals};
+use embassy_nrf::gpio::NoPin;
+use embassy_nrf::{interrupt, uarte, Peripherals};
 use futures::pin_mut;
 use panic_halt as _;
 
@@ -18,7 +19,7 @@ async fn run() -> ! {
     config.baudrate = uarte::Baudrate::BAUD115200;
 
     let irq = interrupt::take!(UARTE0_UART0);
-    let uart = unsafe { uarte::Uarte::new(p.uarte0, irq, p.p0_08, p.p0_06, NoPin, NoPin, config) };
+    let uart = unsafe { uarte::Uarte::new(p.UARTE0, irq, p.P0_08, p.P0_06, NoPin, NoPin, config) };
     pin_mut!(uart);
 
     let mut buf = [0; 1];
@@ -31,6 +32,6 @@ async fn run() -> ! {
 
 #[entry]
 fn main() -> ! {
-    let p = embassy_nrf::pac::Peripherals::take().unwrap();
+    let _p = embassy_nrf::init(Default::default());
     block_on::block_on(run())
 }

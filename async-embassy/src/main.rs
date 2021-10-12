@@ -1,18 +1,17 @@
 #![no_std]
 #![no_main]
-#![feature(min_type_alias_impl_trait)]
-#![feature(impl_trait_in_bindings)]
 #![feature(type_alias_impl_trait)]
 
-use panic_halt as _;
 use cortex_m_rt::entry;
-use embassy::{executor::{task, Executor}, util::Steal};
 use embassy::traits::uart::{Read, Write};
 use embassy::util::Forever;
-use embassy_nrf::{Peripherals, gpio::NoPin, interrupt,  uarte};
+use embassy::{executor::Executor, util::Steal};
+use embassy_nrf::gpio::NoPin;
+use embassy_nrf::{interrupt, uarte, Peripherals};
 use futures::pin_mut;
+use panic_halt as _;
 
-#[task]
+#[embassy::task]
 async fn run() {
     let p = unsafe { Peripherals::steal() };
 
@@ -21,8 +20,7 @@ async fn run() {
     config.baudrate = uarte::Baudrate::BAUD115200;
 
     let irq = interrupt::take!(UARTE0_UART0);
-    let uart =
-        unsafe { uarte::Uarte::new(p.uarte0, irq, p.p0_08, p.p0_06, NoPin, NoPin, config) };
+    let uart = unsafe { uarte::Uarte::new(p.UARTE0, irq, p.P0_08, p.P0_06, NoPin, NoPin, config) };
     pin_mut!(uart);
 
     let mut buf = [0; 1];
@@ -37,11 +35,10 @@ static EXECUTOR: Forever<Executor> = Forever::new();
 
 #[entry]
 fn main() -> ! {
-    let p = embassy_nrf::pac::Peripherals::take().unwrap();
-
     let executor = EXECUTOR.put(Executor::new());
+    let _p = embassy_nrf::init(Default::default());
 
     executor.run(|spawner| {
-        spawner.spawn(run()).unwrap();
-    });
+        spawner.spawn(run()).ok();
+    })
 }
