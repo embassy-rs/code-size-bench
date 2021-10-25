@@ -1,57 +1,62 @@
-#![no_main]
 #![no_std]
+#![no_main]
+#![feature(type_alias_impl_trait)]
+#![feature(generic_associated_types)]
 
-mod device;
-
+use cortex_m_rt::entry;
+use embassy::traits::uart::{Read, Write};
+use embassy::util::Forever;
+use embassy::{executor::Executor};
+use embassy_nrf::gpio::NoPin;
+use embassy_nrf::{interrupt, uarte, peripherals::UARTE0};
+use core::future::Future;
+use drogue_device::*;
 use panic_halt as _;
 
-use cortex_m_rt::{entry, exception};
-use drogue_device::{
-    driver::uart::{serial_rx::*, serial_tx::*},
-    platform::cortex_m::nrf::{
-        uarte::{Baudrate, Parity, Pins, Uarte},
-    },
-    prelude::*,
-};
-use hal::gpio::Level;
-
-use nrf52833_hal as hal;
-
-use crate::device::*;
-
-fn configure() -> MyDevice {
-    let device = hal::pac::Peripherals::take().unwrap();
-
-    let port0 = hal::gpio::p0::Parts::new(device.P0);
-
-    let clocks = hal::clocks::Clocks::new(device.CLOCK).enable_ext_hfosc();
-    let _clocks = clocks.start_lfclk();
-
-    // Uart
-    static mut RX_BUF: [u8; 1] = [0; 1];
-    let (tx, rx) = Uarte::new(
-        device.UARTE0,
-        Pins {
-            txd: port0.p0_06.into_push_pull_output(Level::High).degrade(),
-            rxd: port0.p0_08.into_floating_input().degrade(),
-            cts: None,
-            rts: None,
-        },
-        Parity::EXCLUDED,
-        Baudrate::BAUD115200,
-    )
-    .split(unsafe { &mut RX_BUF });
-    let tx = SerialTx::new(tx);
-    let rx = SerialRx::new(rx);
-
-    MyDevice {
-        tx: ActorContext::new(tx).with_name("uart_tx"),
-        rx: InterruptContext::new(rx, hal::pac::Interrupt::UARTE0_UART0).with_name("uart_rx"),
-        app: ActorContext::new(App::new()),
-    }
-}
+static EXECUTOR: Forever<Executor> = Forever::new();
+static SERVER: Forever<ActorContext<'static, EchoServer>> = Forever::new();
 
 #[entry]
 fn main() -> ! {
-    device!(MyDevice = configure; 2048);
+    let executor = EXECUTOR.put(Executor::new());
+    let p = embassy_nrf::init(Default::default());
+
+    let mut config = uarte::Config::default();
+    config.parity = uarte::Parity::EXCLUDED;
+    config.baudrate = uarte::Baudrate::BAUD115200;
+
+    let irq = interrupt::take!(UARTE0_UART0);
+    let uart = unsafe { uarte::Uarte::new(p.UARTE0, irq, p.P0_08, p.P0_06, NoPin, NoPin, config) };
+
+    executor.run(|spawner| {
+        let server = SERVER.put(ActorContext::new(EchoServer { uart }));
+        server.mount((), spawner);
+    })
+}
+
+pub struct EchoServer {
+    uart: uarte::Uarte<'static, UARTE0>,
+}
+
+impl Actor for EchoServer {
+    #[rustfmt::skip]
+    type OnMountFuture<'m, M> where M: 'm, = impl Future<Output = ()> + 'm;
+
+    fn on_mount<'m, M>(
+        &'m mut self,
+        _: Self::Configuration,
+        _: Address<'static, Self>,
+        _: &'m mut M,
+    ) -> Self::OnMountFuture<'m, M>
+    where
+        M: Inbox<'m, Self> + 'm,
+    {
+        async move {
+            let mut buf = [0; 1];
+            loop {
+                let _ = self.uart.read(&mut buf).await;
+                let _ = self.uart.write(&buf).await;
+            }
+        }
+    }
 }
